@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    #container {
+      display: flex;
+      width: 100vw;
+    }
+    #leftBox{
+      display: flex;
+      width: 50vw;  /* 画面幅の半分に変更 */
+      flex-direction: column;
+    }
+    #correctStringWithLineNumbers {
+      /* correctStringWithLineNumbers内の要素を横並びにするためのスタイルを追加 */
+      display: flex;
+      flex-direction: row;
+      order: 1; /* 2番目に表示 */
+    }
+    #progressContainer {
+      display: flex;
+      height: 48px;
+      justify-content: center; /* 横方向に中央に配置 */
+      align-items: center;     /* 縦方向に中央に配置 */
+    }
+    #progressPercent {
+      margin-left: 15px;
+    }
+    #lineNumbers {
+      width: 10%;
+      height: 600px;
+      background-color: #f5f5f5;
+      text-align: right;
+      font-size: 0.8rem;
+      overflow-y: auto;
+      line-height: 1.5; /* テキストボックスの文字の高さに合わせて調整 */
+      padding-right: 5px;
+      margin: 0%;
+      padding-top: 3px;
+    }
+    #rightBox {
+      display: flex;
+      width: 50vw;  /* 画面幅の半分に変更 */
+      flex-direction: column;
+    }
+    #cursorPositionBox {
+      height: 48px;
+      width: 80%;
+      display: flex;
+      justify-content: center; /* 横方向に中央に配置 */
+      align-items: center;     /* 縦方向に中央に配置 */
+    }
+    #checkButton {
+      margin-top: 10px;
+    }
+    textarea {
+      width: 80%;
+      height: 600px;
+      resize: none;
+      overflow: auto;
+      font-size: 0.8rem;
+      line-height: 1.5; /* テキストボックスの文字の高さに合わせて調整 */
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="leftBox">
+      <div id="progressContainer">
+        <progress id="progressBar" value="0" max="1"></progress>
+        <div id="progressPercent">0%</div>
+      </div>
+      <div id="correctStringWithLineNumbers">
+        <pre id="lineNumbers"></pre>
+        <textarea id="correctString"></textarea>
+      </div>
+    </div>
+    <div id="rightBox">
+      <div id="cursorPositionBox">
+        <div id="cursorPosition">行：0　位置：0</div>
+      </div>
+      <textarea id="userInput"></textarea>
+    </div>
+  </div>
+  <button id="checkButton">チェック</button>
+  <div id="result"></div>
+
+  <script>
+    let correctString = document.getElementById('correctString');
+    let userInput = document.getElementById('userInput');
+    let lineNumbers = document.getElementById('lineNumbers');
+    let cursorPosition = document.getElementById('cursorPosition');
+    let checkButton = document.getElementById('checkButton');
+    let result = document.getElementById('result');
+  
+    // prevInputを初期化
+    let prevInput = '';
+  
+    // 各行の最初の間違い箇所を保存するための変数
+    let firstMistake = {};
+  
+    // Sample string for practice
+    correctString.value = '';
+  
+    // Update line numbers
+    function updateLineNumbers() {
+      let lineNumberHTML = '';
+      let lineCount = correctString.value.split('\n').length;
+      for (let i = 1; i <= lineCount; i++) {
+        lineNumberHTML += i + '\n';
+      }
+      lineNumbers.textContent = lineNumberHTML;
+    }
+    updateLineNumbers();
+
+
+    function updateCursorPosition() {
+      let cursorLine = userInput.value.substr(0, userInput.selectionStart).split('\n').length;
+      let cursorPositionInLine = userInput.selectionStart - userInput.value.lastIndexOf('\n', userInput.selectionStart - 1);
+      document.getElementById('cursorPosition').textContent = `行：${cursorLine}　位置：${cursorPositionInLine - 1}`;
+    }
+
+    userInput.addEventListener('input', updateCursorPosition);
+    userInput.addEventListener('click', updateCursorPosition);
+    userInput.addEventListener('keyup', updateCursorPosition);
+
+    function checkInput(event) {
+      setTimeout(function() {
+        updateLineNumbers();
+
+        let totalLength = correctString.value.replace(/\s/g, '').length;
+        let inputLength = Math.min(event.target.value.replace(/\s/g, '').length, totalLength);
+
+        let progress = totalLength > 0 ? inputLength / totalLength : 0;
+
+        document.getElementById('progressBar').value = progress;
+        document.getElementById('progressPercent').textContent = (progress * 100).toFixed(0) + '%';
+
+        if (event.target.value !== prevInput) {
+          let cursorLine = event.target.value.substr(0, event.target.selectionStart).split('\n').length;
+          let correctLines = correctString.value.split('\n');
+          let userLines = event.target.value.split('\n');
+
+          for(let i = 0; i < userLines.length; i++) {
+            if (correctLines[i]) {
+              let correctLine = correctLines[i]; // don't remove whitespace characters
+              let userLine = userLines[i] ? userLines[i] : '';
+              if(correctLine.substr(0, userLine.length) !== userLine) {
+                let correctLineArray = correctLine.split('');
+                let userLineArray = userLine.split('');
+                let difference = '';
+                let foundDifference = false;
+
+                for(let j = 0; j < userLineArray.length; j++) {
+                  if(correctLineArray[j] !== userLineArray[j] && !foundDifference) {
+                    difference = '位置 ' + (j + 1) + ' で違いがあります';
+                    foundDifference = true;
+                  }
+                }
+                if (i + 1 === cursorLine) {
+                  firstMistake[cursorLine] = difference;
+                  result.innerHTML = `行 ${i+1}: ${difference}`;
+                }
+              } else if (i + 1 === cursorLine && firstMistake[cursorLine]) {
+                firstMistake = {};
+                result.innerHTML = '';
+              }
+            }
+          }
+
+          prevInput = event.target.value;
+        }
+
+        if (prevInput.length > event.target.value.length) {
+          firstMistake = {};
+          result.innerHTML = '';
+        }
+      }, 0);
+    }
+
+    userInput.addEventListener('input', checkInput);
+    userInput.addEventListener('compositionend', checkInput);
+
+    // Check button click event
+    checkButton.addEventListener('click', function() {
+      let correctLines = correctString.value.split('\n');
+      let userLines = userInput.value.split('\n');
+      let isCorrect = true;
+      result.innerHTML = '';
+
+      for(let i = 0; i < correctLines.length; i++) {
+        let correctLine = correctLines[i]; // don't remove whitespace characters
+        let userLine = userLines[i] ? userLines[i] : '';
+        if(correctLine !== userLine) {
+          isCorrect = false;
+          let correctLineArray = correctLine.split('');
+          let userLineArray = userLine ? userLine.split('') : [];
+          let difference = '';
+          let foundDifference = false;
+          for(let j = 0; j < correctLineArray.length; j++) {
+            if(correctLineArray[j] !== userLineArray[j] && !foundDifference) {
+              difference = '位置 ' + (j + 1) + ' で違いがあります';
+              foundDifference = true;
+            }
+          }
+          result.innerHTML += `行 ${i+1}: ${difference}<br>`;
+        }
+      }
+
+      if(isCorrect) {
+        result.innerHTML = '正しい!';
+      }
+    });
+  </script>
+</body>
+</html>
