@@ -2,6 +2,7 @@
 <html>
 <head>
   <script src="progressbar.js"></script>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.2/css/all.css">
   <style>
     #container {
       display: flex;
@@ -11,6 +12,7 @@
       display: flex;
       width: 50vw;  /* 画面幅の半分に変更 */
       flex-direction: column;
+      justify-content: flex-end;
     }
     #correctStringWithLineNumbers {
       /* correctStringWithLineNumbers内の要素を横並びにするためのスタイルを追加 */
@@ -20,35 +22,28 @@
     }
     #progressContainer {
       display: flex;
+      width: 80%; /* 幅を80%に設定 */
       height: 48px;
       justify-content: center; /* 横方向に中央に配置 */
       align-items: center;     /* 縦方向に中央に配置 */
-    }
-    #progressPercent {
-      margin: 15px;
+      margin-left: 12%; /* 左側の余白を設定してtextareaと揃える */
     }
     #lineNumbers {
       width: 10%;
       height: 600px;
       margin-top: 10px;
-      background-color: #f5f5f5;
+      background-color: #dfeff7;
       text-align: right;
       font-size: 0.8rem;
       overflow-y: auto;
       line-height: 1.5; /* テキストボックスの文字の高さに合わせて調整 */
       padding: 3px 5px;
+      border-radius: 5px 0px 0px 5px;
     }
     #rightBox {
       display: flex;
       width: 50vw;  /* 画面幅の半分に変更 */
       flex-direction: column;
-    }
-    #cursorPositionBox {
-      height: 48px;
-      width: 80%;
-      display: flex;
-      justify-content: center; /* 横方向に中央に配置 */
-      align-items: center;     /* 縦方向に中央に配置 */
     }
     #checkButton {
       margin-top: 10px;
@@ -62,6 +57,41 @@
       font-size: 0.8rem;
       line-height: 1.5; /* テキストボックスの文字の高さに合わせて調整 */
     }
+    #cursorPosition {
+      font-size: 15px;
+    }
+    #cursorPositionBox {
+      position: relative;
+      height: 16px;
+      width: 80%;
+      display: flex;
+      justify-content: center; /* 横方向に中央に配置 */
+      align-items: center;     /* 縦方向に中央に配置 */
+      padding: 0.5rem 0rem;
+      text-align: center;
+      color: #0075a9;
+      border-radius: 0 10px 10px 10px;
+      background: #d8ecf5;
+      margin-top: 16px;
+    }
+    #cursorPositionBox:before {
+      font-family: 'Font Awesome 5 Free';
+      font-size: 10px;
+      position: absolute;
+      top: -15px;
+      left: 0;
+      height: 15px;
+      padding: 0 1em;
+      content: '\f0a4  CURSOR';
+      color: #fff;
+      border-radius: 10px 10px 0 0;
+      background: #0075a9;
+    }
+    @media screen and (max-width: 600px) {
+      .progressbar-text {
+        left: 30px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -69,7 +99,6 @@
     <div id="leftBox">
       <div id="progressContainer">
         <div id="progress"></div>
-        <div id="progressPercent">0%</div>
       </div>
       <div id="correctStringWithLineNumbers">
         <pre id="lineNumbers"></pre>
@@ -95,11 +124,21 @@
       color: '#FFEA82',
       trailColor: '#eee',
       trailWidth: 0,
-      svgStyle: {width: '100%', height: '100%'},
+      svgStyle: {width: '100%', height: '20%', borderRadius: '5px'},
+      text: {
+        style: {
+          color: '#999',
+          position: 'absolute',
+          top: '40px',
+          left: '45%',  // プログレスバーの中央に配置
+          transform: 'translateX(-50%)'  // 自身の幅の半分だけ左に移動して、中央に合わせる
+        },
+        autoStyleContainer: false
+      },
       from: {color: '#FFEA82'},
       to: {color: '#ED6A5A'},
       step: (state, bar) => {
-        bar.path.setAttribute('stroke', state.color);
+        bar.setText(Math.round(bar.value() * 100) + ' %');
       }
     });
 
@@ -149,7 +188,6 @@
 
         let progressValue = totalLength > 0 ? inputLength / totalLength : 0;
         progress.animate(progressValue);  // Update the progress bar
-        document.getElementById('progressPercent').textContent = Math.round(progressValue * 100) + '%';  // Update the progress percent
 
         if (event.target.value !== prevInput) {
           let cursorLine = event.target.value.substr(0, event.target.selectionStart).split('\n').length;
